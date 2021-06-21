@@ -74,6 +74,15 @@ func (k Keeper) OnRecvIbcPostPacket(ctx sdk.Context, packet channeltypes.Packet,
 	}
 
 	// TODO: packet reception logic
+	id := k.AppendPost(
+        ctx,
+        types.Post{
+            Creator: packet.SourcePort+"-"+packet.SourceChannel+"-"+data.Creator,
+            Title: data.Title,
+            Content: data.Content,
+        },
+    )
+    packetAck.PostID = strconv.FormatUint(id, 10)
 
 	return packetAck, nil
 }
@@ -98,7 +107,15 @@ func (k Keeper) OnAcknowledgementIbcPostPacket(ctx sdk.Context, packet channelty
 		}
 
 		// TODO: successful acknowledgement logic
-
+		k.AppendSentPost(
+            ctx,
+            types.SentPost{
+                Creator: data.Creator,
+                PostID: packetAck.PostID,
+                Title: data.Title,
+                Chain: packet.DestinationPort+"-"+packet.DestinationChannel,
+            }, 
+        )
 		return nil
 	default:
 		// The counter-party module doesn't implement the correct acknowledgment format
@@ -110,6 +127,13 @@ func (k Keeper) OnAcknowledgementIbcPostPacket(ctx sdk.Context, packet channelty
 func (k Keeper) OnTimeoutIbcPostPacket(ctx sdk.Context, packet channeltypes.Packet, data types.IbcPostPacketData) error {
 
 	// TODO: packet timeout logic
-
+	k.AppendTimedoutPost(
+        ctx,
+        types.TimedoutPost{
+            Creator: data.Creator,
+            Title: data.Title,
+            Chain: packet.DestinationPort+"-"+packet.DestinationChannel,
+        },
+    )
 	return nil
 }
